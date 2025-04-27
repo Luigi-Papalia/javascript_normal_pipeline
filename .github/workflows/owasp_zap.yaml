@@ -15,21 +15,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and run app
-        run: |
-          docker build -t microservizio-js:v1 .
-          docker run -d -p 3000:3000 --name app microservizio-js:v1
-          sleep 10
-
-      - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.14.0
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@latest
         with:
+          driver: docker
+          container-runtime: containerd
+          cpus: 2
+          memory: 4096m
+
+      - name: Build Docker image inside Minikube
+        run: |
+          eval $(minikube -p minikube docker-env)
+          docker build -t microservizio-js:v1 .
+
+      - name: Deploy to Minikube
+        run: |
+          kubectl apply -f k8s-deployment.yaml
+          kubectl rollout status deployment/microservizio-js --timeout=120s
+
+      - name: Wait for Service to be Ready
+        run: |
+          sleep 10
+          kubectl get svc microservizio-js-service
+
+      - name: Get Service URL
+        id: service-url
+        run: |
+          echo "SERVICE_URL=$(minikube service microservizio-js-service --url)" >> $GITHUB_ENV
+
+      - name: ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.4.0
+        with:
+          target: ${{ env.SERVICE_URL }}
           token: ${{ secrets.GITHUB_TOKEN }}
           docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
-          target: 'http://localhost:3000'
           artifact_name: zap_reports
           cmd_options: '-a'
 
-      - name: Stop app container
+      - name: Cleanup
         if: always()
-        run: docker stop app
+        run: |
+          kubectl delete -f k8s-deployment.yaml
