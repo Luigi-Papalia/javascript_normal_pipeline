@@ -23,10 +23,14 @@ jobs:
           cpus: 2
           memory: 4096m
 
+      - name: Set up Docker environment
+        run: |
+          eval $(minikube -p minikube docker-env)
+          echo "DOCKER_HOST=$(docker info --format '{{.DockerRootDir}}')" >> $GITHUB_ENV
+
       - name: Build Docker image inside Minikube
         run: |
           export DOCKER_BUILDKIT=0
-          eval $(minikube -p minikube docker-env)
           docker build -t microservizio-js:v1 .
 
       - name: Deploy to Minikube
