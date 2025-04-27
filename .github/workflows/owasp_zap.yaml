@@ -1,42 +1,36 @@
-name: Dynamic Application Security Testing with OWASP ZAP
+name: DAST with OWASP ZAP
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch: {}
-  schedule:
-    - cron: '0 0 * * 1'  # Run weekly on Mondays
+  repository_dispatch:
+    types: [dast-zap]
+
+permissions:
+  security-events: write
 
 jobs:
-  zap-scan:
+  zap:
     runs-on: ubuntu-latest
-    name: OWASP ZAP Dynamic Scan
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Start application container
+      - uses: actions/checkout@v4
+
+      - name: Build and run app
         run: |
           docker build -t microservizio-js:v1 .
           docker run -d -p 3000:3000 --name app microservizio-js:v1
-          sleep 10  # Give the app time to start
-        
-      - name: ZAP Baseline Scan
+          sleep 10
+
+      - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.7.0
         with:
-          docker_name: 'owasp/zap2docker-stable'
           target: 'http://localhost:3000'
-          rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a'
-          
-      - name: ZAP Full Scan
-        uses: zaproxy/action-full-scan@v0.4.0
+          format: 'sarif'
+          output: 'zap.sarif'
+
+      - name: Upload SARIF to GitHub
+        uses: github/codeql-action/upload-sarif@v2
         with:
-          docker_name: 'owasp/zap2docker-stable'
-          target: 'http://localhost:3000'
-          rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a'
-          
-      - name: Stop application container
+          sarif_file: zap.sarif
+
+      - name: Stop app container
         if: always()
         run: docker stop app

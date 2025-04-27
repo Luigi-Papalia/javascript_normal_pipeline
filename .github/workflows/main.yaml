@@ -1,22 +1,41 @@
-name: Complete DevSecOps Pipeline - Not Forensic Aware
+name: Meta Security Pipeline
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 jobs:
-  security-pipeline:
+  trigger-sca:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Trigger all security scans
-        uses: peter-evans/repository-dispatch@v2
+      - name: Trigger SCA (Snyk)
+        uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          event-type: security-scan-all
-          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+          event-type: sca-snyk
+
+  trigger-sast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger SAST (Semgrep)
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          event-type: sast-semgrep
+
+  trigger-dast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger DAST (OWASP ZAP)
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          event-type: dast-zap
+
+  trigger-iac:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger IaC (Trivy)
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          event-type: iac-trivy

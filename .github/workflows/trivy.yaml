@@ -1,44 +1,42 @@
-name: Infrastructure as Code Scanning with Trivy
+name: IaC with Trivy
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  schedule:
-    - cron: '0 0 * * 3'  # Run weekly on Wednesdays
+  repository_dispatch:
+    types: [iac-trivy]
+
+permissions:
+  security-events: write
 
 jobs:
-  trivy-scan:
+  trivy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Run Trivy vulnerability scanner for Dockerfile
+      - uses: actions/checkout@v4
+
+      - name: Trivy scan Dockerfile
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
-          output: 'trivy-results.sarif'
+          output: 'trivy-docker.sarif'
           severity: 'CRITICAL,HIGH'
-          
-      - name: Run Trivy vulnerability scanner for Kubernetes manifests
+
+      - name: Trivy scan Kubernetes manifests
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'config'
           scan-ref: '.'
           format: 'sarif'
-          output: 'trivy-k8s-results.sarif'
+          output: 'trivy-k8s.sarif'
           severity: 'CRITICAL,HIGH'
-          
-      - name: Upload Dockerfile scan results to GitHub Security tab
+
+      - name: Upload Dockerfile SARIF to GitHub
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: trivy-results.sarif
-          
-      - name: Upload Kubernetes scan results to GitHub Security tab
+          sarif_file: trivy-docker.sarif
+
+      - name: Upload Kubernetes SARIF to GitHub
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: trivy-k8s-results.sarif
+          sarif_file: trivy-k8s.sarif
