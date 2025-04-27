@@ -28,19 +28,10 @@ jobs:
       - name: Set up Docker environment
         run: |
           eval $(minikube -p minikube docker-env)
-
-      - name: Build Docker image inside Minikube
-        run: |
           export DOCKER_BUILDKIT=0
           docker build -t microservizio-js:v1 .
-
-      - name: Deploy to Minikube
-        run: |
           kubectl apply -f microservizio-js-deployment.yaml
           kubectl rollout status deployment/microservizio-js --timeout=120s
-
-      - name: Wait for Service to be Ready
-        run: |
           for i in {1..30}; do
             if kubectl get svc microservizio-js-service; then
               echo "Service is ready."
