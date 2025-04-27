@@ -25,6 +25,7 @@ jobs:
 
       - name: Build Docker image inside Minikube
         run: |
+          export DOCKER_BUILDKIT=0
           eval $(minikube -p minikube docker-env)
           docker build -t microservizio-js:v1 .
 
