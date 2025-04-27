@@ -2,8 +2,14 @@ const express = require('express');
 const app = express();
 const port = 3000;
 
-// support for encoded URLs
+// support for encoded URLs and static files
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send('User-agent: *\nDisallow:');
+});
 
 // Vulnerable endpoint: it accepts a parameter and injects it in an HTML response, without prior sanitization
 app.get('/greet', (req, res) => {
