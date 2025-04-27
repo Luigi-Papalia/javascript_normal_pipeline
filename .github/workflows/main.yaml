@@ -1,0 +1,22 @@
+name: Complete DevSecOps Pipeline - Not Forensic Aware
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  security-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Trigger all security scans
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          event-type: security-scan-all
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
