@@ -30,7 +30,7 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          kubectl apply -f k8s-deployment.yaml
+          kubectl apply -f microservizio-js-deployment.yaml
           kubectl rollout status deployment/microservizio-js --timeout=120s
 
       - name: Wait for Service to be Ready
@@ -55,4 +55,4 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          kubectl delete -f k8s-deployment.yaml
+          kubectl delete -f microservizio-js-deployment.yaml
