@@ -1,0 +1,42 @@
+name: Dynamic Application Security Testing with OWASP ZAP
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 0 * * 1'  # Run weekly on Mondays
+
+jobs:
+  zap-scan:
+    runs-on: ubuntu-latest
+    name: OWASP ZAP Dynamic Scan
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Start application container
+        run: |
+          docker build -t microservizio-js:v1 .
+          docker run -d -p 3000:3000 --name app microservizio-js:v1
+          sleep 10  # Give the app time to start
+        
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.7.0
+        with:
+          docker_name: 'owasp/zap2docker-stable'
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          
+      - name: ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.4.0
+        with:
+          docker_name: 'owasp/zap2docker-stable'
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          
+      - name: Stop application container
+        if: always()
+        run: docker stop app
